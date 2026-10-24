@@ -273,15 +273,16 @@ Subtract the moving center, then rotate about the origin to obtain pattern coord
 
 ```text
 source: seed(drop_region,512)
-level: prev(level) → blur(4) → mul(2) → sub(prev(level,2)) → damp(0.98) → inject(source)
+older: prev(level,2) → inject(source)
+level: prev(level) → blur(4) → mul(2) → sub(older) → damp(0.98)
 texture: screen → linear
 uv: screen → radial(center,1 - level/1024)
 image: uv → sample(texture) → palette
 ```
 
-Initialize both level histories at zero (rest). Update only locations with all required neighbors. The caller supplies a 5×5 drop region from the pointer or a random position; no drop means an empty region.
+Initialize both level histories at zero (rest). Update flattened locations 1 through (W-1)*(H-1) using the left, right, up and down neighbors in flattened order; neighbors wrap across row edges, and the remaining locations are unchanged. The caller supplies a 5×5 drop region from the pointer or a random position; no drop means an empty region.
 
-The texture uses `a=(1-1/240)/8`, `b=-1/8`, and `c=0`. Center is the screen center. Floor scaled offsets before adding center, then clamp sampling coordinates to texture bounds. Injection happens after rendering, so new drops appear later.
+The texture uses `a=(1-1/240)/8`, `b=-1/8`, and `c=0`. Center is the screen center. Floor scaled offsets before adding center, then clamp sampling coordinates to texture bounds. Injection happens after rendering and enters the older term, so a drop first affects the next update.
 
 ### Wobble
 
